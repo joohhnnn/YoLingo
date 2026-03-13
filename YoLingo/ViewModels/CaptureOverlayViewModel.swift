@@ -41,6 +41,9 @@ final class CaptureOverlayViewModel: ObservableObject {
     // 鼠标追踪
     private var mouseMonitor: Any?
 
+    // 涟漪开始时间（确保涟漪至少展示一段时间再切换到飞行）
+    private var rippleStartTime: Date?
+
     // MARK: - Init
 
     init(captureService: CaptureServiceProtocol, eventBus: EventBus) {
@@ -114,20 +117,32 @@ final class CaptureOverlayViewModel: ObservableObject {
                 case .captureDeactivated:
                     self.isActive = false
                     self.stopMouseTracking()
+                    // 只有在光晕阶段才回到 idle，
+                    // rippling/flying/failed 动画进行中不中断
                     if self.animationState == .activated {
                         self.animationState = .idle
                     }
+                    // 如果正在涟漪/飞行中，fn 松开不影响动画继续
 
                 case .captureClicked(let cocoaPosition):
                     // fn+点击 → 涟漪动画
                     self.capturePosition = self.cocoaToSwiftUI(cocoaPosition)
                     self.animationState = .rippling
+                    self.rippleStartTime = Date()
 
                 case .wordCaptured(let result):
-                    // 抓词成功 → 飞行动画
+                    // 抓词成功 → 飞行动画（确保涟漪至少展示 200ms）
                     if self.animationState == .rippling {
-                        self.capturedText = result.text
-                        self.animationState = .flying
+                        let elapsed = Date().timeIntervalSince(self.rippleStartTime ?? Date())
+                        let minRippleDuration = 0.2
+                        let delay = max(0, minRippleDuration - elapsed)
+                        Task {
+                            if delay > 0 {
+                                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                            }
+                            self.capturedText = result.text
+                            self.animationState = .flying
+                        }
                     }
 
                 case .captureFailed:

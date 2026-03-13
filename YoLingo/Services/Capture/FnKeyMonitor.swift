@@ -114,11 +114,12 @@ final class FnKeyMonitor {
             return
         }
 
-        // 监听 flagsChanged + leftMouseDown + keyDown（keyDown 用于检测 fn 组合键）
+        // 只监听 flagsChanged + leftMouseDown
+        // 不再监听 keyDown：功能键(方向键/Delete 等)的 keyDown 会携带 maskSecondaryFn，
+        // 导致误判 fn 被按下
         let eventMask: CGEventMask =
             (1 << CGEventType.flagsChanged.rawValue) |
-            (1 << CGEventType.leftMouseDown.rawValue) |
-            (1 << CGEventType.keyDown.rawValue)
+            (1 << CGEventType.leftMouseDown.rawValue)
 
         let selfPointer = Unmanaged.passUnretained(self).toOpaque()
 
@@ -162,10 +163,6 @@ final class FnKeyMonitor {
             handleFlagsChanged(event)
         case .leftMouseDown:
             handleMouseDown(event)
-        case .keyDown:
-            // keyDown 事件中也可能带有 fn 修饰
-            // （用户按 fn+其他键时，fn flag 会出现在 keyDown 事件中）
-            handleKeyDownForFn(event)
         default:
             break
         }
@@ -180,48 +177,16 @@ final class FnKeyMonitor {
         // 首次收到 flagsChanged 时打印诊断信息
         NSLog("[FnKeyMonitor] flagsChanged: keyCode=%lld flags=0x%llx", keyCode, rawFlags)
 
-        // 检查是否为 fn/Globe 键
+        // 只处理 fn/Globe 键的 keyCode，不再做 maskSecondaryFn 兜底
+        // 兜底逻辑会被功能键(方向键/Delete 等)触发误判
         if keyCode == FnKeyMonitor.fnKeyCode || keyCode == FnKeyMonitor.globeKeyCode {
-            // fn 键的 flag 是 bit 23 (0x800000 = maskSecondaryFn)
             let fnFlagSet = (rawFlags & 0x800000) != 0
             setFnState(fnFlagSet, source: "CGEvent keyCode=\(keyCode)")
-            return
         }
-
-        // 兜底：即使 keyCode 不是 63/179，也检查 maskSecondaryFn flag
-        // （某些系统版本可能不给 fn 键分配 keyCode）
-        let fnFlagSet = flags.contains(.maskSecondaryFn)
-        let wasFnHeld = isFnHeld
-
-        // 只在 fn flag 状态实际改变时才处理
-        if fnFlagSet != wasFnHeld {
-            // 但要排除 fn+其他键 的情况（如 fn+Shift 时松开 Shift 会触发 flagsChanged）
-            // 通过检查是否有其他修饰键变化来判断
-            let otherModifiers: CGEventFlags = [.maskShift, .maskControl, .maskAlternate, .maskCommand]
-            let hasOtherModifiers = !flags.intersection(otherModifiers).isEmpty
-
-            if !hasOtherModifiers {
-                setFnState(fnFlagSet, source: "CGEvent flags")
-            }
-        }
-    }
-
-    private func handleKeyDownForFn(_ event: CGEvent) {
-        // 如果 keyDown 事件带有 maskSecondaryFn flag，说明用户正按着 fn
-        // 这可以作为检测 fn 按下的备用方式
-        let flags = event.flags
-        if flags.contains(.maskSecondaryFn) && !isFnHeld {
-            setFnState(true, source: "CGEvent keyDown+fn")
-        }
+        // 其他 keyCode 的 flagsChanged 不处理（由 HID/NSEvent 兜底）
     }
 
     private func handleMouseDown(_ event: CGEvent) {
-        // 也检查鼠标点击时是否带 fn flag（作为备用检测）
-        let flags = event.flags
-        if flags.contains(.maskSecondaryFn) && !isFnHeld {
-            setFnState(true, source: "CGEvent mouseDown+fn")
-        }
-
         guard isFnHeld else { return }
 
         // CGEvent.location 是屏幕坐标（左上原点），统一转为 Cocoa 坐标（左下原点）
