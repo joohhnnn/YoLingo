@@ -45,13 +45,19 @@ Storage Layer    SQLiteWordRepository (GRDB)
 
 ```bash
 # 构建
-swift build
+make build
 
-# 运行
-swift run
+# 打包 .app bundle + 签名 + 运行
+make run
+
+# 打包为 .app（不运行）
+make app
 
 # 测试
 swift test
+
+# 清理构建产物
+make clean
 ```
 
 需要在系统设置中授予以下权限：
