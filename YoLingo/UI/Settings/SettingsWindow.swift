@@ -5,7 +5,7 @@ import SwiftUI
 // MARK: - SettingsWindow
 
 /// 偏好设置窗口管理
-final class SettingsWindow {
+final class SettingsWindow: NSObject, NSWindowDelegate {
 
     private var window: NSWindow?
     private let viewModel: SettingsViewModel
@@ -15,11 +15,14 @@ final class SettingsWindow {
     }
 
     func show() {
-        guard window == nil else {
-            window?.makeKeyAndOrderFront(nil)
+        // 窗口还在 → 直接激活
+        if let window = window, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
+        // 窗口已关闭或不存在 → 重新创建
+        window = nil
 
         let window = NSWindow(
             contentRect: CGRect(x: 0, y: 0, width: 480, height: 520),
@@ -38,10 +41,17 @@ final class SettingsWindow {
             rootView: SettingsView(viewModel: viewModel)
         )
         window.contentView = hostingView
+        window.delegate = self
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
         self.window = window
+    }
+
+    // MARK: - NSWindowDelegate
+
+    func windowWillClose(_ notification: Notification) {
+        window = nil
     }
 
     func close() {
