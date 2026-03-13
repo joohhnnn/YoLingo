@@ -1,0 +1,29 @@
+/* 通用 */
+"general_title" = "一般";
+"language_label" = "介面語言";
+"language_zh_hans" = "简体中文";
+"language_zh_hant" = "繁體中文";
+"launch_at_login" = "開機自動啟動";
+
+/* AI 服務 */
+"ai_title" = "AI 服務";
+"ai_provider" = "AI 提供者";
+"api_key_label" = "API Key";
+"api_key_placeholder" = "輸入 API Key";
+"validate_button" = "驗證";
+"keychain_note" = "密鑰安全儲存於 macOS 鑰匙串";
+"validation_valid" = "有效";
+"validation_invalid" = "API Key 無效";
+"validation_error" = "網路連線失敗";
+"validation_empty" = "請輸入 API Key";
+
+/* 懸浮卡片 */
+"card_title" = "懸浮卡片";
+"card_position" = "卡片位置";
+"card_opacity" = "閒置透明度";
+
+/* 關於 */
+"about_title" = "關於";
+"about_version" = "版本";
+"about_database" = "資料庫";
+"about_words" = "個單字";

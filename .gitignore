@@ -1,0 +1,35 @@
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Environment
+.env
+.env.local
+
+# Superpowers brainstorm files
+.superpowers/
+
+# Git worktrees
+.worktrees/
+
+# Markdown docs (except README)
+*.md
+!README.md
+
+# Documentation
+docs/
